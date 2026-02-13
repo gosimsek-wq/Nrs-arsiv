@@ -38,25 +38,47 @@ def ensure_worksheet(sheet_obj, ws_name):
     try:
         existing_sheets = [ws.title for ws in sheet_obj.worksheets()]
         if ws_name not in existing_sheets:
-            sheet_obj.add_worksheet(title=ws_name, rows="1000", cols="40")
+            ws = sheet_obj.add_worksheet(title=ws_name, rows="1", cols="40")
+            return ws
         return sheet_obj.worksheet(ws_name)
     except Exception as e:
         st.error(f"Sayfa işlem hatası ({ws_name}): {e}")
         return None
 
+# YENİ VE HATASIZ VERİ OKUMA MOTORU
 def get_data(sheet_obj, worksheet_name):
     try:
         ws = ensure_worksheet(sheet_obj, worksheet_name)
-        data = ws.get_all_records()
-        return pd.DataFrame(data)
-    except:
+        vals = ws.get_all_values()
+        
+        # Sadece gerçekten dolu olan satırları filtrele (Gizli boşlukları yoksay)
+        cleaned_vals = [row for row in vals if any(str(cell).strip() for cell in row)]
+        if len(cleaned_vals) < 2:
+            return pd.DataFrame()
+            
+        headers = cleaned_vals[0]
+        data = cleaned_vals[1:]
+        
+        # Pandas hatasını önlemek için satır uzunluklarını eşitle
+        max_cols = len(headers)
+        data = [row + [""] * (max_cols - len(row)) for row in data]
+        
+        return pd.DataFrame(data, columns=headers)
+    except Exception as e:
         return pd.DataFrame()
 
+# YENİ VE HATASIZ VERİ YAZMA MOTORU
 def add_data(sheet_obj, worksheet_name, data_dict):
     try:
         ws = ensure_worksheet(sheet_obj, worksheet_name)
-        if not ws.get_all_values():
+        vals = ws.get_all_values()
+        cleaned_vals = [row for row in vals if any(str(cell).strip() for cell in row)]
+        
+        # Eğer tabloda hiç gerçek veri yoksa ÖNCE başlıkları ekle
+        if not cleaned_vals:
             ws.append_row(list(data_dict.keys()))
+            
+        # Sonra veriyi ekle
         ws.append_row(list(data_dict.values()))
         return True
     except Exception as e:
