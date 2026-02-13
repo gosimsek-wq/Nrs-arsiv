@@ -18,7 +18,7 @@ def make_hashes(password):
 def check_hashes(password, hashed_text):
     return make_hashes(password) == hashed_text
 
-# --- GOOGLE SHEETS BAĞLANTISI VE OTOMATİK SAYFA OLUŞTURUCU ---
+# --- GOOGLE SHEETS BAĞLANTISI ---
 @st.cache_resource
 def connect_gsheet():
     try:
@@ -149,7 +149,6 @@ else:
     if choice == "Dashboard":
         st.title("📊 Klinik Genel Görünüm")
         try:
-            # Tüm modüllerin istatistiği
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("🩸 Vasküler Vaka", len(get_data(sheet, "vaskuler")))
             c2.metric("🧬 Onkoloji Vaka", len(get_data(sheet, "onkoloji")))
@@ -170,21 +169,27 @@ else:
         with st.form("v_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
+            st.markdown("**Klinik ve Radyolojik Skorlamalar**")
             c1, c2, c3 = st.columns(3)
             gks = c1.slider("Geliş GKS", 3, 15, 15)
-            fisher = c2.selectbox("Fisher Skoru (SAK)", ["Değerlendirilmedi", "Evre 1", "Evre 2", "Evre 3", "Evre 4"])
-            hunt_hess = c3.selectbox("Hunt-Hess Evresi", ["Değerlendirilmedi", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5"])
+            mrs = c2.selectbox("Modifiye Rankin Skoru (mRS)", ["Değerlendirilmedi", "0", "1", "2", "3", "4", "5", "6 (Eksitus)"])
+            fisher = c3.selectbox("Fisher Skoru (SAK)", ["Değerlendirilmedi", "Evre 1", "Evre 2", "Evre 3", "Evre 4"])
             
-            c4, c5 = st.columns(2)
-            ogilvy = c4.selectbox("Ogilvy-Carter Skoru", ["Değerlendirilmedi", "0", "1", "2", "3", "4", "5"])
-            sahss = c5.selectbox("SAHSS (SAH Sekela Skalası)", ["Değerlendirilmedi", "İyi", "Orta", "Kötü"])
+            c4, c5, c6 = st.columns(3)
+            hunt_hess = c4.selectbox("Hunt-Hess (SAK)", ["Değerlendirilmedi", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5"])
+            ich_skoru = c5.selectbox("ICH Skoru (İntraserebral Kanama)", ["Değerlendirilmedi", "0", "1", "2", "3", "4", "5", "6"])
+            spetzler = c6.selectbox("Spetzler-Martin (AVM)", ["Değerlendirilmedi", "Grade I", "Grade II", "Grade III", "Grade IV", "Grade V"])
             
-            tani = st.text_input("Klinik Tanı / Anevrizma-AVM Lokasyonu")
-            notlar = st.text_area("Cerrahi Notlar / EVD Takibi")
+            c7, c8 = st.columns(2)
+            ogilvy = c7.selectbox("Ogilvy-Carter Skoru", ["Değerlendirilmedi", "0", "1", "2", "3", "4", "5"])
+            sahss = c8.selectbox("SAHSS (SAH Sekela Skalası)", ["Değerlendirilmedi", "İyi", "Orta", "Kötü"])
+            
+            tani = st.text_input("Klinik Tanı / Lokasyon")
+            notlar = st.text_area("Cerrahi Notlar / Komplikasyonlar")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
-                        "gks": gks, "fisher": fisher, "hunt_hess": hunt_hess, "ogilvy_carter": ogilvy, "sahss": sahss, "tani": tani, 
+                        "gks": gks, "mrs": mrs, "fisher": fisher, "hunt_hess": hunt_hess, "ich_skoru": ich_skoru, "spetzler": spetzler, "ogilvy_carter": ogilvy, "sahss": sahss, "tani": tani, 
                         "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("vaskuler", veri)
 
@@ -193,18 +198,23 @@ else:
         with st.form("o_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
+            st.markdown("**Tümör Özellikleri ve Skorlamalar**")
             c1, c2, c3 = st.columns(3)
-            tip = c1.selectbox("Tümör Tipi", ["Glial Tümör", "Menenjiyom", "Metastaz", "Schwannom", "Diğer"])
-            kps = c2.slider("Karnofsky Skoru (KPS)", 0, 100, 80, step=10)
-            ds_gpa = c3.text_input("DS-GPA Skoru (Metastaz İçin)")
+            tip = c1.selectbox("Tümör Tipi", ["Glial Tümör", "Menenjiyom", "Metastaz", "Schwannom", "Kafatas Tabanı", "Diğer"])
+            who_grade = c2.selectbox("WHO Derecesi", ["Değerlendirilmedi", "Grade 1", "Grade 2", "Grade 3", "Grade 4"])
+            idh_durumu = c3.selectbox("IDH Mutasyon Durumu", ["Bilinmiyor", "Mutant", "Wild-type"])
+
+            c4, c5, c6 = st.columns(3)
+            kps = c4.slider("Karnofsky Skoru (KPS)", 0, 100, 80, step=10)
+            ds_gpa = c5.text_input("DS-GPA Skoru (Metastaz İçin)")
+            rezeksiyon = c6.selectbox("Rezeksiyon Oranı", ["Gross Total (GTR)", "Subtotal (STR)", "Parsiyel", "Biyopsi"])
             
             lokasyon = st.text_input("Anatomik Lokasyon")
-            rezeksiyon = st.selectbox("Rezeksiyon Oranı", ["Gross Total Rezeksiyon (GTR)", "Subtotal Rezeksiyon (STR)", "Biyopsi"])
-            notlar = st.text_area("Cerrahi Notlar")
+            notlar = st.text_area("Cerrahi Notlar / Patoloji Detayları")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
-                        "tip": tip, "kps": kps, "ds_gpa": ds_gpa, "lokasyon": lokasyon, "rezeksiyon": rezeksiyon, 
+                        "tip": tip, "who_grade": who_grade, "idh_durumu": idh_durumu, "kps": kps, "ds_gpa": ds_gpa, "lokasyon": lokasyon, "rezeksiyon": rezeksiyon, 
                         "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("onkoloji", veri)
 
@@ -215,9 +225,9 @@ else:
             
             c1, c2 = st.columns(2)
             cerrahi = c1.selectbox("Cerrahi Yöntem", ["VNS İmplantasyonu", "Amigdalohipokampektomi", "Lezyonektomi", "Korpus Kallozotomi", "Diğer"])
-            engel = c2.selectbox("Engel Sınıflaması", ["Sınıf I", "Sınıf II", "Sınıf III", "Sınıf IV", "Değerlendirilmedi"])
+            engel = c2.selectbox("Engel Sınıflaması (Post-op Hedef/Sonuç)", ["Değerlendirilmedi", "Sınıf I", "Sınıf II", "Sınıf III", "Sınıf IV"])
             
-            notlar = st.text_area("Klinik Notlar")
+            notlar = st.text_area("Klinik Notlar / Nöbet Paterni")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
@@ -229,17 +239,19 @@ else:
         with st.form("s_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
-            c1, c2, c3 = st.columns(3)
-            patoloji = c1.selectbox("Patoloji", ["Lomber Disk Hernisi", "Servikal Disk Hernisi", "Spinal Stenoz", "Spondilolistezis", "Spinal Travma", "Spinal Tümör", "Diğer"])
+            st.markdown("**Spinal Skorlamalar**")
+            c1, c2, c3, c4 = st.columns(4)
+            patoloji = c1.selectbox("Patoloji", ["Lomber Disk", "Servikal Disk", "Spinal Stenoz", "Spondilolistezis", "Spinal Travma", "Tümör", "Diğer"])
             asia = c2.selectbox("ASIA Skoru", ["Değerlendirilmedi", "A", "B", "C", "D", "E"])
             vas = c3.slider("VAS Ağrı Skoru (0-10)", 0, 10, 5)
+            odi_ndi = c4.number_input("ODI / NDI (%)", 0, 100, 0)
             
             seviye = st.text_input("Spinal Seviye (Örn: L4-L5, C5-C6)")
-            notlar = st.text_area("Cerrahi Notlar / Enstrümantasyon Detayları")
+            notlar = st.text_area("Enstrümantasyon Detayları / Notlar")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
-                        "patoloji": patoloji, "asia": asia, "vas_skoru": vas, "seviye": seviye, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
+                        "patoloji": patoloji, "asia": asia, "vas_skoru": vas, "odi_ndi": odi_ndi, "seviye": seviye, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("omurga", veri)
 
     elif choice == "Pediatrik":
@@ -247,9 +259,9 @@ else:
         with st.form("p_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
-            kategori = st.selectbox("Patoloji Kategorisi", ["Hidrosefali", "Sendromik Kraniosinostoz", "Non-Sendromik Kraniosinostoz", "Meningomyelosel", "Tethered Cord", "Pediatrik Tümör", "Vasküler", "Diğer"])
+            kategori = st.selectbox("Patoloji Kategorisi", ["Hidrosefali", "Sendromik Kraniosinostoz", "Non-Sendromik Kraniosinostoz", "Meningomyelosel", "Tethered Cord", "Pediatrik Tümör", "Diğer"])
             tani = st.text_input("Spesifik Tanı / Sendrom Adı")
-            notlar = st.text_area("Cerrahi Notlar")
+            notlar = st.text_area("Cerrahi Notlar / EVD-Şant Takibi")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
@@ -261,9 +273,9 @@ else:
         with st.form("f_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
-            tur = st.selectbox("Girişim Türü", ["Derin Beyin Stimülasyonu (DBS)", "Baklofen Pompası", "Ağrı Pili / Kordotomi", "Diğer"])
+            tur = st.selectbox("Girişim Türü", ["Derin Beyin Stimülasyonu (DBS)", "Baklofen Pompası", "Ağrı Pili", "Lezyon Cerrahisi", "Diğer"])
             hedef = st.text_input("Hedef Çekirdek (Örn: STN, GPi, VIM)")
-            notlar = st.text_area("Klinik Notlar")
+            notlar = st.text_area("Programlama Parametreleri / Notlar")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
@@ -275,122 +287,84 @@ else:
         with st.form("t_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
-            c1, c2 = st.columns(2)
+            st.markdown("**Travma Skorlamaları**")
+            c1, c2, c3, c4 = st.columns(4)
             gks = c1.slider("Geliş GKS", 3, 15, 15)
-            marshall = c2.selectbox("Marshall Tomografi Skoru", ["Değerlendirilmedi", "Grade I", "Grade II", "Grade III", "Grade IV", "Grade V (Kitle)", "Grade VI"])
+            marshall = c2.selectbox("Marshall Skoru", ["Değerlendirilmedi", "Grade I", "Grade II", "Grade III", "Grade IV", "Grade V (Kitle)", "Grade VI"])
+            rotterdam = c3.selectbox("Rotterdam Skoru", ["Değerlendirilmedi", "1", "2", "3", "4", "5", "6"])
+            gose = c4.selectbox("GOSE (Sonuç Skoru)", ["Değerlendirilmedi", "1 (Ölüm)", "2 (Vejetatif)", "3 (Ağır Engelli-Alt)", "4 (Ağır Engelli-Üst)", "5 (Orta Engelli)", "6 (İyi İyileşme)"])
             
-            tani = st.text_input("Tanı (EDH, SDH, Kontüzyon vb.)")
-            notlar = st.text_area("Cerrahi Müdahale / ICP Takip Notları")
+            tani = st.text_input("Primer Tanı (Örn: Akut SDH, EDH)")
+            notlar = st.text_area("İntrakraniyal Basınç (ICP) Takibi / Müdahale")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
-                        "gks": gks, "marshall": marshall, "tani": tani, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
+                        "gks": gks, "marshall": marshall, "rotterdam": rotterdam, "gose": gose, "tani": tani, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("travma", veri)
 
     elif choice == "👨‍🏫 Süpervizör Paneli":
         st.title("👨‍🏫 Süpervizör Onay Paneli")
-        modul = st.selectbox("İncelenecek Veritabanı (Modül)", ["vaskuler", "onkoloji", "epilepsi", "omurga", "pediatrik", "fonksiyonel", "travma"])
+        modul = st.selectbox("İncelenecek Veritabanı", ["vaskuler", "onkoloji", "epilepsi", "omurga", "pediatrik", "fonksiyonel", "travma"])
         df = get_data(sheet, modul)
         
         if not df.empty and 'onay_durumu' in df.columns:
             bekleyenler = df[df['onay_durumu'] != "Onaylandı"]
             if not bekleyenler.empty:
                 for index, row in bekleyenler.iterrows():
-                    with st.expander(f"📌 {row.get('ad', 'İsimsiz Vaka')} | Protokol: {row.get('protokol','')} | Ekleyen: {row.get('kaydeden', '')}"):
-                        if row.get('link_dicom'): st.markdown(f"- [Görüntüleme (DICOM/MR) Linkine Git]({row['link_dicom']})")
-                        if row.get('link_video'): st.markdown(f"- [Ameliyat Videosu Linkine Git]({row['link_video']})")
-                        if row.get('link_ek'): st.markdown(f"- [Ek Dosya / Rapor Linkine Git]({row['link_ek']})")
+                    with st.expander(f"📌 {row.get('ad', 'İsimsiz')} | {row.get('tarih','')} | Ekleyen: {row.get('kaydeden', '')}"):
+                        if row.get('link_dicom'): st.markdown(f"- [DICOM/MR Linki]({row['link_dicom']})")
+                        if row.get('link_video'): st.markdown(f"- [Video Linki]({row['link_video']})")
+                        if row.get('link_ek'): st.markdown(f"- [Ek Dosya Linki]({row['link_ek']})")
                         
                         gosterilecek = {k: v for k, v in row.items() if k not in ['id', 'onay_durumu', 'supervizor_notu', 'link_dicom', 'link_video', 'link_ek']}
                         st.write(gosterilecek)
-                        s_not = st.text_area("Süpervizör Onay Notu", key=f"not_{row['id']}")
                         
-                        if st.button("Vakayı Onayla", key=f"btn_{row['id']}"):
+                        s_not = st.text_area("Süpervizör Notu", key=f"not_{row['id']}")
+                        if st.button("Onayla", key=f"btn_{row['id']}"):
                             try:
                                 ws = sheet.worksheet(modul)
                                 cell = ws.find(str(row['id']))
                                 ws.update_cell(cell.row, ws.find("onay_durumu").col, "Onaylandı")
                                 ws.update_cell(cell.row, ws.find("supervizor_notu").col, s_not)
-                                st.success("Vaka onaylandı."); time.sleep(1); st.rerun()
+                                st.success("Onaylandı."); time.sleep(1); st.rerun()
                             except Exception as e: st.error(f"Hata: {e}")
             else: st.success("Onay bekleyen vaka bulunmuyor.")
         else: st.warning("Kayıt yok.")
 
     elif choice == "📈 İstatistik ve Analiz":
-        st.title("📈 Akademik İstatistik ve Veri Analizi")
-        st.info("Bu alanda klinik verilerinizin demografik ve patolojik dağılımlarını anlık olarak inceleyebilirsiniz.")
+        st.title("📈 İstatistik ve Veri Analizi")
+        st.info("İstatistiksel analiz için modül seçin. Tüm verileri tablonun sağ üstündeki indirme butonundan (CSV formatında) alıp SPSS vb. programlara aktarabilirsiniz.")
         
-        analiz_modul = st.selectbox("Analiz Edilecek Kliniği Seçin", ["vaskuler", "onkoloji", "epilepsi", "omurga", "pediatrik", "fonksiyonel", "travma"])
+        analiz_modul = st.selectbox("Analiz Edilecek Klinik", ["vaskuler", "onkoloji", "epilepsi", "omurga", "pediatrik", "fonksiyonel", "travma"])
         df = get_data(sheet, analiz_modul)
         
         if not df.empty:
-            st.subheader(f"📊 {analiz_modul.upper()} Kliniği Özeti")
-            col1, col2 = st.columns(2)
-            col1.metric("Toplam Vaka Sayısı", len(df))
-            
-            # Yaş ortalaması hesaplama (veri tipi sayısal değilse hata vermemesi için dönüştürme)
+            c1, c2 = st.columns(2)
+            c1.metric("Toplam Vaka", len(df))
             try:
                 df['yas'] = pd.to_numeric(df['yas'], errors='coerce')
-                yas_ort = df['yas'].mean()
-                col2.metric("Yaş Ortalaması", f"{yas_ort:.1f}")
+                c2.metric("Yaş Ortalaması", f"{df['yas'].mean():.1f}")
             except: pass
             
             st.divider()
             col3, col4 = st.columns(2)
-            
             with col3:
                 st.markdown("**Cinsiyet Dağılımı**")
-                if 'cinsiyet' in df.columns:
-                    st.bar_chart(df['cinsiyet'].value_counts())
+                if 'cinsiyet' in df.columns: st.bar_chart(df['cinsiyet'].value_counts())
             
             with col4:
-                # Patoloji / Tip / Kategori grafikleri modüle göre değişir
                 if analiz_modul == "onkoloji" and 'tip' in df.columns:
                     st.markdown("**Tümör Tipi Dağılımı**")
                     st.bar_chart(df['tip'].value_counts())
                 elif analiz_modul == "omurga" and 'patoloji' in df.columns:
-                    st.markdown("**Spinal Patoloji Dağılımı**")
+                    st.markdown("**Patoloji Dağılımı**")
                     st.bar_chart(df['patoloji'].value_counts())
                 elif analiz_modul == "vaskuler" and 'hunt_hess' in df.columns:
-                    st.markdown("**Hunt-Hess Evre Dağılımı**")
+                    st.markdown("**Hunt-Hess Dağılımı**")
                     st.bar_chart(df['hunt_hess'].value_counts())
-                elif analiz_modul == "pediatrik" and 'kategori' in df.columns:
-                    st.markdown("**Patoloji Kategorisi Dağılımı**")
-                    st.bar_chart(df['kategori'].value_counts())
+                elif analiz_modul == "travma" and 'marshall' in df.columns:
+                    st.markdown("**Marshall Skoru Dağılımı**")
+                    st.bar_chart(df['marshall'].value_counts())
                 else:
-                    st.markdown("**Kayıtlı Hastalar**")
-                    st.write(df[['tarih', 'ad', 'yas', 'cinsiyet']].tail(10))
-            
-            st.divider()
-            st.markdown("### 📥 Ham Veri Dışa Aktarımı")
-            st.write("Veritabanının tamamını alt kısımdaki tablonun sağ üst köşesinde beliren indirme ikonuna tıklayarak **CSV (Excel)** formatında indirebilir ve gelişmiş analizleriniz için kullanabilirsiniz.")
-            st.dataframe(df)
-            
-        else:
-            st.warning("Bu klinikte henüz analiz edilecek yeterli veri bulunmamaktadır.")
-
-    elif choice == "👥 Kullanıcı Yönetimi":
-        st.title("👥 Kadro Yönetimi")
-        with st.form("add_user"):
-            u = st.text_input("Kullanıcı")
-            p = st.text_input("Şifre", type='password')
-            r = st.selectbox("Yetki Rolü", ["Asistan", "Yönetici"])
-            if st.form_submit_button("Sisteme Ekle"):
-                try:
-                    ws = ensure_worksheet(sheet, "users")
-                    if u in ws.col_values(1): st.error("Bu kullanıcı mevcut!")
-                    else: ws.append_row([u, make_hashes(p), r]); st.success("Eklendi!"); time.sleep(1); st.rerun()
-                except: pass
-        
-        st.divider()
-        users_df = get_data(sheet, "users")
-        if not users_df.empty:
-            silinecekler = users_df[users_df['username'] != 'admin']['username'].tolist()
-            if silinecekler:
-                sil = st.selectbox("Erişimi İptal Edilecek Kişi", silinecekler)
-                if st.button("❌ Kullanıcıyı Sil"):
-                    ws = sheet.worksheet("users"); cell = ws.find(sil); ws.delete_rows(cell.row); st.success("Silindi."); time.sleep(1); st.rerun()
-
-    elif choice == "Çıkış":
-        st.session_state.clear()
-        st.rerun()
+                    st.markdown("**Son Eklenen Vakalar**")
+                    st.write(df[['tarih
