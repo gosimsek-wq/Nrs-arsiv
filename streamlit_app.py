@@ -367,4 +367,36 @@ else:
                     st.bar_chart(df['marshall'].value_counts())
                 else:
                     st.markdown("**Son Eklenen Vakalar**")
-                    st.write(df[['tarih
+                    st.write(df[['tarih', 'ad', 'yas', 'cinsiyet']].tail(5))
+            
+            st.divider()
+            st.markdown("### 📥 Tüm Veritabanı")
+            st.dataframe(df)
+        else:
+            st.warning("Veri bulunamadı.")
+
+    elif choice == "👥 Kullanıcı Yönetimi":
+        st.title("👥 Kadro Yönetimi")
+        with st.form("add_user"):
+            u = st.text_input("Kullanıcı Adı")
+            p = st.text_input("Şifre", type='password')
+            r = st.selectbox("Rol", ["Asistan", "Yönetici"])
+            if st.form_submit_button("Ekle"):
+                try:
+                    ws = ensure_worksheet(sheet, "users")
+                    if u in ws.col_values(1): st.error("Kullanıcı mevcut!")
+                    else: ws.append_row([u, make_hashes(p), r]); st.success("Eklendi!"); time.sleep(1); st.rerun()
+                except: pass
+        
+        st.divider()
+        users_df = get_data(sheet, "users")
+        if not users_df.empty:
+            silinecekler = users_df[users_df['username'] != 'admin']['username'].tolist()
+            if silinecekler:
+                sil = st.selectbox("Kullanıcıyı Sil", silinecekler)
+                if st.button("❌ Sil"):
+                    ws = sheet.worksheet("users"); cell = ws.find(sil); ws.delete_rows(cell.row); st.success("Silindi."); time.sleep(1); st.rerun()
+
+    elif choice == "Çıkış":
+        st.session_state.clear()
+        st.rerun()
