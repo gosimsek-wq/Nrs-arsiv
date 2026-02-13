@@ -184,12 +184,16 @@ else:
             ogilvy = c7.selectbox("Ogilvy-Carter Skoru", ["Değerlendirilmedi", "0", "1", "2", "3", "4", "5"])
             sahss = c8.selectbox("SAHSS (SAH Sekela Skalası)", ["Değerlendirilmedi", "İyi", "Orta", "Kötü"])
             
-            tani = st.text_input("Klinik Tanı / Lokasyon")
-            notlar = st.text_area("Cerrahi Notlar / Komplikasyonlar")
+            st.markdown("**Tanı ve Lokasyon Bilgileri**")
+            t_col1, t_col2 = st.columns(2)
+            tani = t_col1.selectbox("Klinik Tanı", ["Anevrizma", "Arteriovenöz Malformasyon (AVM)", "Kavernom", "Dural AVF / Spinal AVF", "İntraserebral Kanama (Primer)", "Moyamoya", "İskemik İnme / Karotis Stenozu", "Galen Veni Anevrizması", "Diğer"])
+            lokasyon = t_col2.selectbox("Anatomik Lokasyon", ["ACA / ACoA", "MCA", "ICA / PCoA", "Baziler / PCA / Vertebral", "Lober (Kortikal/Subkortikal)", "Bazal Ganglion / Talamus", "Spinal", "Diğer"])
+            
+            notlar = st.text_area("Cerrahi Notlar / Komplikasyonlar / Ek Bilgiler")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
-                        "gks": gks, "mrs": mrs, "fisher": fisher, "hunt_hess": hunt_hess, "ich_skoru": ich_skoru, "spetzler": spetzler, "ogilvy_carter": ogilvy, "sahss": sahss, "tani": tani, 
+                        "gks": gks, "mrs": mrs, "fisher": fisher, "hunt_hess": hunt_hess, "ich_skoru": ich_skoru, "spetzler": spetzler, "ogilvy_carter": ogilvy, "sahss": sahss, "tani": tani, "lokasyon": lokasyon, 
                         "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("vaskuler", veri)
 
@@ -200,17 +204,19 @@ else:
             
             st.markdown("**Tümör Özellikleri ve Skorlamalar**")
             c1, c2, c3 = st.columns(3)
-            tip = c1.selectbox("Tümör Tipi", ["Glial Tümör", "Menenjiyom", "Metastaz", "Schwannom", "Kafatas Tabanı", "Diğer"])
+            tip = c1.selectbox("Tümör Tipi", ["Glial Tümör (Yüksek Dereceli)", "Glial Tümör (Düşük Dereceli)", "Menenjiyom", "Metastaz", "Schwannom", "Kafa Tabanı Tümörü", "SSS Lenfoması", "Diğer"])
             who_grade = c2.selectbox("WHO Derecesi", ["Değerlendirilmedi", "Grade 1", "Grade 2", "Grade 3", "Grade 4"])
             idh_durumu = c3.selectbox("IDH Mutasyon Durumu", ["Bilinmiyor", "Mutant", "Wild-type"])
 
             c4, c5, c6 = st.columns(3)
             kps = c4.slider("Karnofsky Skoru (KPS)", 0, 100, 80, step=10)
-            ds_gpa = c5.text_input("DS-GPA Skoru (Metastaz İçin)")
+            ds_gpa = c5.selectbox("DS-GPA Skoru (Metastaz İçin)", ["Değerlendirilmedi", "0.0 - 1.0", "1.5 - 2.5", "3.0 - 4.0"])
             rezeksiyon = c6.selectbox("Rezeksiyon Oranı", ["Gross Total (GTR)", "Subtotal (STR)", "Parsiyel", "Biyopsi"])
             
-            lokasyon = st.text_input("Anatomik Lokasyon")
-            notlar = st.text_area("Cerrahi Notlar / Patoloji Detayları")
+            st.markdown("**Lokasyon Bilgisi**")
+            lokasyon = st.selectbox("Anatomik Lokasyon", ["Frontal", "Temporal", "Parietal", "Oksipital", "Serebellar / Posterior Fossa", "Kafa Tabanı", "Beyin Sapı / Mezensefalon", "Ventriküliçi", "Spinal İntramedüller", "Spinal Ekstramedüller", "Diğer"])
+            
+            notlar = st.text_area("Cerrahi Notlar / Patoloji Detayları / Ek Bilgiler")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
@@ -224,10 +230,10 @@ else:
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
             c1, c2 = st.columns(2)
-            cerrahi = c1.selectbox("Cerrahi Yöntem", ["VNS İmplantasyonu", "Amigdalohipokampektomi", "Lezyonektomi", "Korpus Kallozotomi", "Diğer"])
+            cerrahi = c1.selectbox("Cerrahi Yöntem", ["VNS İmplantasyonu", "Amigdalohipokampektomi", "Lezyonektomi", "Korpus Kallozotomi", "Grid / Strip Yerleştirilmesi", "Diğer"])
             engel = c2.selectbox("Engel Sınıflaması (Post-op Hedef/Sonuç)", ["Değerlendirilmedi", "Sınıf I", "Sınıf II", "Sınıf III", "Sınıf IV"])
             
-            notlar = st.text_area("Klinik Notlar / Nöbet Paterni")
+            notlar = st.text_area("Klinik Notlar / Nöbet Paterni / Ek Bilgiler")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
@@ -241,13 +247,15 @@ else:
             
             st.markdown("**Spinal Skorlamalar**")
             c1, c2, c3, c4 = st.columns(4)
-            patoloji = c1.selectbox("Patoloji", ["Lomber Disk", "Servikal Disk", "Spinal Stenoz", "Spondilolistezis", "Spinal Travma", "Tümör", "Diğer"])
+            patoloji = c1.selectbox("Patoloji", ["Lomber Disk Hernisi", "Servikal Disk Hernisi", "Spinal Stenoz", "Spondilolistezis", "Spinal Travma", "Spinal Kist Hidatik", "Tarlov Kisti", "Spinal Tümör", "Diğer"])
             asia = c2.selectbox("ASIA Skoru", ["Değerlendirilmedi", "A", "B", "C", "D", "E"])
             vas = c3.slider("VAS Ağrı Skoru (0-10)", 0, 10, 5)
             odi_ndi = c4.number_input("ODI / NDI (%)", 0, 100, 0)
             
-            seviye = st.text_input("Spinal Seviye (Örn: L4-L5, C5-C6)")
-            notlar = st.text_area("Enstrümantasyon Detayları / Notlar")
+            st.markdown("**Lokasyon Bilgisi**")
+            seviye = st.selectbox("Spinal Seviye / Bölge", ["Servikal", "Torakal", "Lomber", "Lumbosakral", "Kraniyoservikal Bileşke", "Skolyoz / Deformite (Tüm Omurga)", "Diğer"])
+            
+            notlar = st.text_area("Enstrümantasyon Detayları / Tam Seviye (Örn: L4-L5) / Notlar")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
@@ -259,9 +267,26 @@ else:
         with st.form("p_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
-            kategori = st.selectbox("Patoloji Kategorisi", ["Hidrosefali", "Sendromik Kraniosinostoz", "Non-Sendromik Kraniosinostoz", "Meningomyelosel", "Tethered Cord", "Pediatrik Tümör", "Diğer"])
-            tani = st.text_input("Spesifik Tanı / Sendrom Adı")
-            notlar = st.text_area("Cerrahi Notlar / EVD-Şant Takibi")
+            c1, c2 = st.columns(2)
+            kategori = c1.selectbox("Patoloji Kategorisi", ["Kraniosinostoz", "Hidrosefali", "Meningomyelosel / Spinal Disrafizm", "Tethered Cord", "Pediatrik Tümör", "Vasküler (Galen Veni vb.)", "KİBA (Kitle Olmadan)", "Diğer"])
+            
+            tani = c2.selectbox("Spesifik Tanı / Patoloji", [
+                "Belirtilmemiş", 
+                "İzole Sagittal Sinostoz (Skafosefali)", 
+                "Tek Taraflı Koronal Sinostoz (Plagiosefali)", 
+                "Bilateral Koronal Sinostoz (Brakisefali)", 
+                "Metopik Sinostoz (Trigonosefali)", 
+                "Lambdoid Sinostoz", 
+                "Sendromik (Apert / Crouzon / Pfeiffer vb.)", 
+                "Dandy-Walker Varyantı / Malformasyonu", 
+                "Araknoid Kist", 
+                "Medulloblastom", 
+                "Talamik Gliom", 
+                "Ependimom", 
+                "Diğer"
+            ])
+            
+            notlar = st.text_area("Cerrahi Notlar / EVD-Şant Takibi / Ek Bilgiler")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
@@ -273,8 +298,10 @@ else:
         with st.form("f_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
-            tur = st.selectbox("Girişim Türü", ["Derin Beyin Stimülasyonu (DBS)", "Baklofen Pompası", "Ağrı Pili", "Lezyon Cerrahisi", "Diğer"])
-            hedef = st.text_input("Hedef Çekirdek (Örn: STN, GPi, VIM)")
+            c1, c2 = st.columns(2)
+            tur = c1.selectbox("Girişim Türü", ["Derin Beyin Stimülasyonu (DBS)", "Baklofen Pompası", "Ağrı Pili / Spinal Kord Stimülatörü", "Lezyon Cerrahisi", "Diğer"])
+            hedef = c2.selectbox("Hedef Çekirdek / Bölge", ["Uygulanamaz / Diğer", "STN (Subtalamik Nükleus)", "GPi (Globus Pallidus İnternus)", "VIM (Ventralis İntermedius)", "Ant. Nükleus (Talamus)", "Spinal Kord", "Periferik Sinir"])
+            
             notlar = st.text_area("Programlama Parametreleri / Notlar")
             
             if st.form_submit_button("Kaydet"):
@@ -294,8 +321,8 @@ else:
             rotterdam = c3.selectbox("Rotterdam Skoru", ["Değerlendirilmedi", "1", "2", "3", "4", "5", "6"])
             gose = c4.selectbox("GOSE (Sonuç Skoru)", ["Değerlendirilmedi", "1 (Ölüm)", "2 (Vejetatif)", "3 (Ağır Engelli-Alt)", "4 (Ağır Engelli-Üst)", "5 (Orta Engelli)", "6 (İyi İyileşme)"])
             
-            tani = st.text_input("Primer Tanı (Örn: Akut SDH, EDH)")
-            notlar = st.text_area("İntrakraniyal Basınç (ICP) Takibi / Müdahale")
+            tani = st.selectbox("Primer Tanı", ["Akut Subdural Hematom (ASDH)", "Epidural Hematom (EDH)", "Kronik Subdural Hematom (KSDH)", "Serebral Kontüzyon / İntraparankimal", "Travmatik Subaraknoid Kanama (tSAK)", "Kafatası Çökme Kırığı", "Yaygın Aksonal Yaralanma (YAY)", "Spinal Kord Yaralanması", "Diğer"])
+            notlar = st.text_area("İntrakraniyal Basınç (ICP) Takibi / Müdahale Detayları")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
@@ -359,12 +386,15 @@ else:
                 elif analiz_modul == "omurga" and 'patoloji' in df.columns:
                     st.markdown("**Patoloji Dağılımı**")
                     st.bar_chart(df['patoloji'].value_counts())
-                elif analiz_modul == "vaskuler" and 'hunt_hess' in df.columns:
-                    st.markdown("**Hunt-Hess Dağılımı**")
-                    st.bar_chart(df['hunt_hess'].value_counts())
-                elif analiz_modul == "travma" and 'marshall' in df.columns:
-                    st.markdown("**Marshall Skoru Dağılımı**")
-                    st.bar_chart(df['marshall'].value_counts())
+                elif analiz_modul == "vaskuler" and 'tani' in df.columns:
+                    st.markdown("**Klinik Tanı Dağılımı**")
+                    st.bar_chart(df['tani'].value_counts())
+                elif analiz_modul == "travma" and 'tani' in df.columns:
+                    st.markdown("**Travma Tanı Dağılımı**")
+                    st.bar_chart(df['tani'].value_counts())
+                elif analiz_modul == "pediatrik" and 'tani' in df.columns:
+                    st.markdown("**Spesifik Tanı Dağılımı**")
+                    st.bar_chart(df['tani'].value_counts())
                 else:
                     st.markdown("**Son Eklenen Vakalar**")
                     st.write(df[['tarih', 'ad', 'yas', 'cinsiyet']].tail(5))
