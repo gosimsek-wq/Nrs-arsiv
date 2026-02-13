@@ -35,7 +35,6 @@ def connect_gsheet():
         st.stop()
 
 def ensure_worksheet(sheet_obj, ws_name):
-    # Sayfa yoksa otomatik olarak oluşturur
     try:
         existing_sheets = [ws.title for ws in sheet_obj.worksheets()]
         if ws_name not in existing_sheets:
@@ -106,9 +105,9 @@ else:
     
     menu = ["Dashboard", "Vasküler", "Nöro-Onkoloji", "Epilepsi", "Omurga", "Pediatrik", "Fonksiyonel", "Travma"]
     
-    # Süpervizör ve Yönetim Sadece Yöneticide Çıkar
     if st.session_state['user_role'] == "Yönetici":
         menu.append("👨‍🏫 Süpervizör Paneli")
+        menu.append("📈 İstatistik ve Analiz")
         menu.append("👥 Kullanıcı Yönetimi")
     
     menu.append("Çıkış")
@@ -117,7 +116,6 @@ else:
     bugun = datetime.now().strftime("%d/%m/%Y")
     sheet = connect_gsheet()
 
-    # Ortak Hasta Kimlik ve ÇOKLU LİNK Formu
     def hasta_kimlik_ui():
         c1, c2, c3 = st.columns(3)
         protokol = c1.text_input("Protokol No")
@@ -128,7 +126,7 @@ else:
         yas = c4.number_input("Yaş", 0, 120, 50)
         cinsiyet = c5.selectbox("Cinsiyet", ["Erkek", "Kadın"])
         
-        st.markdown("#### 🔗 Dosya ve Görüntü Bağlantıları (Google Drive / PACS vb.)")
+        st.markdown("#### 🔗 Dosya ve Görüntü Bağlantıları")
         l1, l2, l3 = st.columns(3)
         link_dicom = l1.text_input("Görüntüleme (DICOM/MR) Linki")
         link_video = l2.text_input("Ameliyat Videosu Linki")
@@ -137,7 +135,6 @@ else:
         st.divider()
         return protokol, ad, yas, cinsiyet, yatis.strftime("%d/%m/%Y"), link_dicom, link_video, link_ek
 
-    # Ortak Kayıt Fonksiyonu (Süpervizör Onayı İçerir)
     def kaydet(worksheet, data):
         final_data = {
             "id": str(uuid.uuid4())[:8], 
@@ -146,17 +143,26 @@ else:
             "supervizor_notu": ""
         }
         if add_data(sheet, worksheet, final_data):
-            st.success(f"✅ Kayıt başarıyla '{worksheet.upper()}' modülüne eklendi. Süpervizör onayı bekleniyor.")
+            st.success(f"✅ Kayıt başarıyla eklendi. Süpervizör onayı bekleniyor.")
 
     # --- MODÜLLER ---
     if choice == "Dashboard":
-        st.title("📊 Nrs-Arsiv Paneli")
+        st.title("📊 Klinik Genel Görünüm")
         try:
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Vasküler Vaka", len(get_data(sheet, "vaskuler")))
-            col2.metric("Onkoloji Vaka", len(get_data(sheet, "onkoloji")))
-            col3.metric("Spinal Vaka", len(get_data(sheet, "omurga")))
-            col4.metric("Pediatrik Vaka", len(get_data(sheet, "pediatrik")))
+            # Tüm modüllerin istatistiği
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("🩸 Vasküler Vaka", len(get_data(sheet, "vaskuler")))
+            c2.metric("🧬 Onkoloji Vaka", len(get_data(sheet, "onkoloji")))
+            c3.metric("🦴 Spinal Vaka", len(get_data(sheet, "omurga")))
+            c4.metric("🚑 Travma Vaka", len(get_data(sheet, "travma")))
+            
+            c5, c6, c7, c8 = st.columns(4)
+            c5.metric("👶 Pediatrik Vaka", len(get_data(sheet, "pediatrik")))
+            c6.metric("🧠 Epilepsi Vaka", len(get_data(sheet, "epilepsi")))
+            c7.metric("⚙️ Fonksiyonel Vaka", len(get_data(sheet, "fonksiyonel")))
+            c8.metric("👨‍⚕️ Toplam Kullanıcı", len(get_data(sheet, "users")))
+            
+            st.info("💡 Detaylı analizler ve grafikler için sol menüden 'İstatistik ve Analiz' sekmesine gidebilirsiniz.")
         except: pass
 
     elif choice == "Vasküler":
@@ -181,7 +187,6 @@ else:
                         "gks": gks, "fisher": fisher, "hunt_hess": hunt_hess, "ogilvy_carter": ogilvy, "sahss": sahss, "tani": tani, 
                         "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("vaskuler", veri)
-        st.dataframe(get_data(sheet, "vaskuler").tail(5))
 
     elif choice == "Nöro-Onkoloji":
         st.header("🧬 Nöro-Onkoloji")
@@ -195,14 +200,13 @@ else:
             
             lokasyon = st.text_input("Anatomik Lokasyon")
             rezeksiyon = st.selectbox("Rezeksiyon Oranı", ["Gross Total Rezeksiyon (GTR)", "Subtotal Rezeksiyon (STR)", "Biyopsi"])
-            notlar = st.text_area("Cerrahi Notlar / Patoloji Beklentisi")
+            notlar = st.text_area("Cerrahi Notlar")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
                         "tip": tip, "kps": kps, "ds_gpa": ds_gpa, "lokasyon": lokasyon, "rezeksiyon": rezeksiyon, 
                         "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("onkoloji", veri)
-        st.dataframe(get_data(sheet, "onkoloji").tail(5))
 
     elif choice == "Epilepsi":
         st.header("🧠 Epilepsi Cerrahisi")
@@ -210,49 +214,47 @@ else:
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
             c1, c2 = st.columns(2)
-            cerrahi = c1.selectbox("Cerrahi Yöntem", ["VNS İmplantasyonu", "Amigdalohipokampektomi", "Lezyonektomi", "Korpus Kallozotomi", "Grid/Strip Yerleştirme", "Diğer"])
-            engel = c2.selectbox("Engel Sınıflaması (Post-op Hedef/Durum)", ["Sınıf I", "Sınıf II", "Sınıf III", "Sınıf IV", "Değerlendirilmedi"])
+            cerrahi = c1.selectbox("Cerrahi Yöntem", ["VNS İmplantasyonu", "Amigdalohipokampektomi", "Lezyonektomi", "Korpus Kallozotomi", "Diğer"])
+            engel = c2.selectbox("Engel Sınıflaması", ["Sınıf I", "Sınıf II", "Sınıf III", "Sınıf IV", "Değerlendirilmedi"])
             
-            notlar = st.text_area("Klinik Notlar / Nöbet Sıklığı")
+            notlar = st.text_area("Klinik Notlar")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
                         "cerrahi": cerrahi, "engel_skoru": engel, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("epilepsi", veri)
-        st.dataframe(get_data(sheet, "epilepsi").tail(5))
 
     elif choice == "Omurga":
         st.header("🦴 Spinal Cerrahi")
         with st.form("s_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
-            c1, c2 = st.columns(2)
+            c1, c2, c3 = st.columns(3)
             patoloji = c1.selectbox("Patoloji", ["Lomber Disk Hernisi", "Servikal Disk Hernisi", "Spinal Stenoz", "Spondilolistezis", "Spinal Travma", "Spinal Tümör", "Diğer"])
-            asia = c2.selectbox("ASIA Skoru (Mevcutsa)", ["Değerlendirilmedi", "A", "B", "C", "D", "E"])
+            asia = c2.selectbox("ASIA Skoru", ["Değerlendirilmedi", "A", "B", "C", "D", "E"])
+            vas = c3.slider("VAS Ağrı Skoru (0-10)", 0, 10, 5)
             
             seviye = st.text_input("Spinal Seviye (Örn: L4-L5, C5-C6)")
             notlar = st.text_area("Cerrahi Notlar / Enstrümantasyon Detayları")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
-                        "patoloji": patoloji, "asia": asia, "seviye": seviye, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
+                        "patoloji": patoloji, "asia": asia, "vas_skoru": vas, "seviye": seviye, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("omurga", veri)
-        st.dataframe(get_data(sheet, "omurga").tail(5))
 
     elif choice == "Pediatrik":
         st.header("👶 Pediatrik Nöroşirürji")
         with st.form("p_form"):
             protokol, ad, yas, cinsiyet, yatis, link_dicom, link_video, link_ek = hasta_kimlik_ui()
             
-            kategori = st.selectbox("Patoloji Kategorisi", ["Hidrosefali", "Sendromik Kraniosinostoz", "Non-Sendromik Kraniosinostoz", "Meningomyelosel", "Tethered Cord", "Pediatrik Tümör", "Galen Veni Anevrizması / Vasküler", "Diğer"])
+            kategori = st.selectbox("Patoloji Kategorisi", ["Hidrosefali", "Sendromik Kraniosinostoz", "Non-Sendromik Kraniosinostoz", "Meningomyelosel", "Tethered Cord", "Pediatrik Tümör", "Vasküler", "Diğer"])
             tani = st.text_input("Spesifik Tanı / Sendrom Adı")
-            notlar = st.text_area("Cerrahi Notlar / Şant Tipi / İlerleyici Plan")
+            notlar = st.text_area("Cerrahi Notlar")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
                         "kategori": kategori, "tani": tani, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("pediatrik", veri)
-        st.dataframe(get_data(sheet, "pediatrik").tail(5))
 
     elif choice == "Fonksiyonel":
         st.header("⚙️ Fonksiyonel Nöroşirürji")
@@ -261,13 +263,12 @@ else:
             
             tur = st.selectbox("Girişim Türü", ["Derin Beyin Stimülasyonu (DBS)", "Baklofen Pompası", "Ağrı Pili / Kordotomi", "Diğer"])
             hedef = st.text_input("Hedef Çekirdek (Örn: STN, GPi, VIM)")
-            notlar = st.text_area("Klinik Notlar / Programlama Detayları")
+            notlar = st.text_area("Klinik Notlar")
             
             if st.form_submit_button("Kaydet"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
                         "tur": tur, "hedef": hedef, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("fonksiyonel", veri)
-        st.dataframe(get_data(sheet, "fonksiyonel").tail(5))
 
     elif choice == "Travma":
         st.header("🚑 Nörotravma")
@@ -285,12 +286,9 @@ else:
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "yas": yas, "cinsiyet": cinsiyet, "yatis": yatis, 
                         "gks": gks, "marshall": marshall, "tani": tani, "link_dicom": link_dicom, "link_video": link_video, "link_ek": link_ek, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("travma", veri)
-        st.dataframe(get_data(sheet, "travma").tail(5))
 
     elif choice == "👨‍🏫 Süpervizör Paneli":
         st.title("👨‍🏫 Süpervizör Onay Paneli")
-        st.info("Bu modülde asistanların kaydettiği vakaları inceleyebilir, linklere doğrudan gidebilir ve onaylayabilirsiniz.")
-        
         modul = st.selectbox("İncelenecek Veritabanı (Modül)", ["vaskuler", "onkoloji", "epilepsi", "omurga", "pediatrik", "fonksiyonel", "travma"])
         df = get_data(sheet, modul)
         
@@ -299,35 +297,77 @@ else:
             if not bekleyenler.empty:
                 for index, row in bekleyenler.iterrows():
                     with st.expander(f"📌 {row.get('ad', 'İsimsiz Vaka')} | Protokol: {row.get('protokol','')} | Ekleyen: {row.get('kaydeden', '')}"):
-                        
-                        # Bağlantılar Ekranı
-                        st.markdown("##### 📁 Yüklenen Dosya Bağlantıları")
                         if row.get('link_dicom'): st.markdown(f"- [Görüntüleme (DICOM/MR) Linkine Git]({row['link_dicom']})")
                         if row.get('link_video'): st.markdown(f"- [Ameliyat Videosu Linkine Git]({row['link_video']})")
                         if row.get('link_ek'): st.markdown(f"- [Ek Dosya / Rapor Linkine Git]({row['link_ek']})")
                         
-                        st.markdown("##### 📝 Vaka Detayları")
                         gosterilecek = {k: v for k, v in row.items() if k not in ['id', 'onay_durumu', 'supervizor_notu', 'link_dicom', 'link_video', 'link_ek']}
                         st.write(gosterilecek)
-                        
-                        s_not = st.text_area("Süpervizör Onay Notu / Düzeltme İsteği", key=f"not_{row['id']}")
+                        s_not = st.text_area("Süpervizör Onay Notu", key=f"not_{row['id']}")
                         
                         if st.button("Vakayı Onayla", key=f"btn_{row['id']}"):
                             try:
                                 ws = sheet.worksheet(modul)
                                 cell = ws.find(str(row['id']))
-                                col_onay = ws.find("onay_durumu").col
-                                col_not = ws.find("supervizor_notu").col
-                                
-                                ws.update_cell(cell.row, col_onay, "Onaylandı")
-                                ws.update_cell(cell.row, col_not, s_not)
-                                st.success(f"{row.get('ad')} vakası onaylandı."); time.sleep(1); st.rerun()
-                            except Exception as e:
-                                st.error(f"Onaylama sırasında hata oluştu: {e}")
-            else:
-                st.success(f"✅ Harika! '{modul.upper()}' modülünde onay bekleyen vaka bulunmuyor.")
+                                ws.update_cell(cell.row, ws.find("onay_durumu").col, "Onaylandı")
+                                ws.update_cell(cell.row, ws.find("supervizor_notu").col, s_not)
+                                st.success("Vaka onaylandı."); time.sleep(1); st.rerun()
+                            except Exception as e: st.error(f"Hata: {e}")
+            else: st.success("Onay bekleyen vaka bulunmuyor.")
+        else: st.warning("Kayıt yok.")
+
+    elif choice == "📈 İstatistik ve Analiz":
+        st.title("📈 Akademik İstatistik ve Veri Analizi")
+        st.info("Bu alanda klinik verilerinizin demografik ve patolojik dağılımlarını anlık olarak inceleyebilirsiniz.")
+        
+        analiz_modul = st.selectbox("Analiz Edilecek Kliniği Seçin", ["vaskuler", "onkoloji", "epilepsi", "omurga", "pediatrik", "fonksiyonel", "travma"])
+        df = get_data(sheet, analiz_modul)
+        
+        if not df.empty:
+            st.subheader(f"📊 {analiz_modul.upper()} Kliniği Özeti")
+            col1, col2 = st.columns(2)
+            col1.metric("Toplam Vaka Sayısı", len(df))
+            
+            # Yaş ortalaması hesaplama (veri tipi sayısal değilse hata vermemesi için dönüştürme)
+            try:
+                df['yas'] = pd.to_numeric(df['yas'], errors='coerce')
+                yas_ort = df['yas'].mean()
+                col2.metric("Yaş Ortalaması", f"{yas_ort:.1f}")
+            except: pass
+            
+            st.divider()
+            col3, col4 = st.columns(2)
+            
+            with col3:
+                st.markdown("**Cinsiyet Dağılımı**")
+                if 'cinsiyet' in df.columns:
+                    st.bar_chart(df['cinsiyet'].value_counts())
+            
+            with col4:
+                # Patoloji / Tip / Kategori grafikleri modüle göre değişir
+                if analiz_modul == "onkoloji" and 'tip' in df.columns:
+                    st.markdown("**Tümör Tipi Dağılımı**")
+                    st.bar_chart(df['tip'].value_counts())
+                elif analiz_modul == "omurga" and 'patoloji' in df.columns:
+                    st.markdown("**Spinal Patoloji Dağılımı**")
+                    st.bar_chart(df['patoloji'].value_counts())
+                elif analiz_modul == "vaskuler" and 'hunt_hess' in df.columns:
+                    st.markdown("**Hunt-Hess Evre Dağılımı**")
+                    st.bar_chart(df['hunt_hess'].value_counts())
+                elif analiz_modul == "pediatrik" and 'kategori' in df.columns:
+                    st.markdown("**Patoloji Kategorisi Dağılımı**")
+                    st.bar_chart(df['kategori'].value_counts())
+                else:
+                    st.markdown("**Kayıtlı Hastalar**")
+                    st.write(df[['tarih', 'ad', 'yas', 'cinsiyet']].tail(10))
+            
+            st.divider()
+            st.markdown("### 📥 Ham Veri Dışa Aktarımı")
+            st.write("Veritabanının tamamını alt kısımdaki tablonun sağ üst köşesinde beliren indirme ikonuna tıklayarak **CSV (Excel)** formatında indirebilir ve gelişmiş analizleriniz için kullanabilirsiniz.")
+            st.dataframe(df)
+            
         else:
-            st.warning("Bu modülde henüz hiç kayıt yok veya onay mekanizması kurulmadan önceki eski kayıtlar mevcut.")
+            st.warning("Bu klinikte henüz analiz edilecek yeterli veri bulunmamaktadır.")
 
     elif choice == "👥 Kullanıcı Yönetimi":
         st.title("👥 Kadro Yönetimi")
@@ -338,15 +378,9 @@ else:
             if st.form_submit_button("Sisteme Ekle"):
                 try:
                     ws = ensure_worksheet(sheet, "users")
-                    if u in ws.col_values(1):
-                        st.error("Bu kullanıcı zaten mevcut!")
-                    else:
-                        ws.append_row([u, make_hashes(p), r])
-                        st.success("Kullanıcı başarıyla eklendi!")
-                        time.sleep(1)
-                        st.rerun()
-                except Exception as e:
-                    st.error(str(e))
+                    if u in ws.col_values(1): st.error("Bu kullanıcı mevcut!")
+                    else: ws.append_row([u, make_hashes(p), r]); st.success("Eklendi!"); time.sleep(1); st.rerun()
+                except: pass
         
         st.divider()
         users_df = get_data(sheet, "users")
@@ -355,12 +389,7 @@ else:
             if silinecekler:
                 sil = st.selectbox("Erişimi İptal Edilecek Kişi", silinecekler)
                 if st.button("❌ Kullanıcıyı Sil"):
-                    ws = sheet.worksheet("users")
-                    cell = ws.find(sil)
-                    ws.delete_rows(cell.row)
-                    st.success("Kullanıcı silindi.")
-                    time.sleep(1)
-                    st.rerun()
+                    ws = sheet.worksheet("users"); cell = ws.find(sil); ws.delete_rows(cell.row); st.success("Silindi."); time.sleep(1); st.rerun()
 
     elif choice == "Çıkış":
         st.session_state.clear()
