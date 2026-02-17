@@ -220,7 +220,7 @@ else:
             kontrol_tarihi = c3.date_input("Kontrol Tarihi")
             
             c4, c5 = st.columns(2)
-            ilgili_modul = c4.selectbox("İlgili Klinik Bölüm", ["Vasküler", "Nöro-Onkoloji", "Epilepsi", "Omurga", "Pediatrik", "Fonksiyonel", "Travma", "Genel Nöroşirürji"])
+            ilgili_modul = c4.selectbox("İlgili Klinik Bölüm", ["Vasküler", "Nöro-Onkoloji", "Epilepsi", "Omurga", "Pediatrik", "Fonksiyonel", "Travma"])
             guncel_durum = c5.selectbox("Genel Klinik Durum", ["Stabil / İyileşme (Tam Şifa)", "Kısmi İyileşme / Defisit Devam Ediyor", "Nüks / Progresyon", "Komplikasyon Gelişti", "Eksitus", "Diğer"])
             
             # --- YENİ EKLENEN KISIM: AKADEMİK TAKİP ÖLÇEKLERİ ---
