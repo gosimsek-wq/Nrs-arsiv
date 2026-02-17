@@ -212,7 +212,7 @@ else:
 
     elif choice == "🩺 Poliklinik & Kontrol":
         st.header("🩺 Poliklinik ve Kontrol Kayıtları")
-        st.info("Bu alanda önceden ameliyat edilen veya poliklinikte takip edilen olguların güncel kontrol durumlarını sisteme işleyebilirsiniz.")
+        st.info("Bu alanda olguların uzun dönem takip sonuçlarını ve branşa özgü skorlarını işleyebilirsiniz.")
         with st.form("kontrol_form"):
             c1, c2, c3 = st.columns(3)
             protokol = c1.text_input("Protokol No (Önceki kayıtlarla bağlamak için)")
@@ -221,8 +221,20 @@ else:
             
             c4, c5 = st.columns(2)
             ilgili_modul = c4.selectbox("İlgili Klinik Bölüm", ["Vasküler", "Nöro-Onkoloji", "Epilepsi", "Omurga", "Pediatrik", "Fonksiyonel", "Travma", "Genel Nöroşirürji"])
-            guncel_durum = c5.selectbox("Güncel Klinik Durum", ["Stabil / İyileşme (Tam Şifa)", "Kısmi İyileşme / Defisit Devam Ediyor", "Nüks / Progresyon", "Komplikasyon Gelişti", "Eksitus", "Diğer"])
+            guncel_durum = c5.selectbox("Genel Klinik Durum", ["Stabil / İyileşme (Tam Şifa)", "Kısmi İyileşme / Defisit Devam Ediyor", "Nüks / Progresyon", "Komplikasyon Gelişti", "Eksitus", "Diğer"])
             
+            # --- YENİ EKLENEN KISIM: AKADEMİK TAKİP ÖLÇEKLERİ ---
+            st.markdown("#### 📏 Branşa Özgü Takip Skorları (İlgili Olanları Doldurunuz)")
+            s1, s2, s3 = st.columns(3)
+            mrs = s1.selectbox("mRS (Vasküler/İnme)", ["Değerlendirilmedi", "0", "1", "2", "3", "4", "5", "6"])
+            gose = s2.selectbox("GOS / GOSE (Travma/Genel)", ["Değerlendirilmedi", "1 (Ölüm)", "2 (Vejetatif)", "3 (Ağır Alt)", "4 (Ağır Üst)", "5 (Orta Alt)", "6 (Orta Üst)", "7 (İyi Alt)", "8 (İyi Üst)"])
+            kps = s3.slider("KPS (Onkoloji - Performans)", 0, 100, 80, step=10)
+            
+            s4, s5 = st.columns(2)
+            engel = s4.selectbox("Engel Skoru (Epilepsi)", ["Değerlendirilmedi", "Sınıf I", "Sınıf II", "Sınıf III", "Sınıf IV"])
+            vas = s5.slider("VAS Ağrı Skoru (Omurga)", 0, 10, 0)
+            # ----------------------------------------------------
+
             st.markdown("#### 🔗 Güncel Kontrol Görüntülemeleri")
             k1, k2 = st.columns(2)
             link_dicom_k = k1.text_input("Güncel Görüntüleme (DICOM/MR/BT) Linki")
@@ -233,6 +245,7 @@ else:
             if st.form_submit_button("Kontrol Kaydını Ekle"):
                 veri = {"tarih": bugun, "protokol": protokol, "ad": ad, "kontrol_tarihi": kontrol_tarihi.strftime("%d/%m/%Y"), 
                         "ilgili_modul": ilgili_modul, "guncel_durum": guncel_durum, 
+                        "mrs": mrs, "gose": gose, "kps": kps, "engel": engel, "vas": vas,
                         "link_dicom": link_dicom_k, "link_ek": link_ek_k, "kaydeden": st.session_state['username'], "notlar": notlar}
                 kaydet("kontrol", veri)
 
@@ -403,9 +416,10 @@ else:
                     if 'cinsiyet' in df.columns: st.bar_chart(df['cinsiyet'].value_counts())
             
             with col4:
-                if analiz_modul == "kontrol" and 'guncel_durum' in df.columns:
-                    st.markdown("**Güncel Klinik Durum Dağılımı**")
-                    st.bar_chart(df['guncel_durum'].value_counts())
+                # Modüle özgü grafikler
+                if analiz_modul == "kontrol" and 'mrs' in df.columns:
+                     st.markdown("**mRS (Vasküler) Dağılımı**")
+                     st.bar_chart(df['mrs'].value_counts())
                 elif analiz_modul == "onkoloji" and 'tip' in df.columns:
                     st.markdown("**Tümör Tipi Dağılımı**")
                     st.bar_chart(df['tip'].value_counts())
